@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auditoría y Gestión Electoral - Control en la Nube</title>
+    <title>ANG-APP</title>
     <style>
         :root {
             --bg-global: #f8fafc;
@@ -119,6 +119,193 @@
         .checkbox-item { display: flex; align-items: center; gap: 10px; padding: 8px 6px; font-size: 0.95rem; border-bottom: 1px solid #f1f5f9; }
         .checkbox-item:last-child { border-bottom: none; }
         .checkbox-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <header class="main-header">
+            <span class="system-badge">Conectado</span>
+            <h1>Control de Participación Electoral</h1>
+            <p>Sincronización centralizada en tiempo real.</p>
+        </header>
+
+        <div class="top-actions-bar">
+            <button class="btn-top-action btn-vaciar" onclick="window.vaciarTodoConClave()">🧹 Vaciar Sistema</button>
+            <button class="btn-top-action btn-json" onclick="window.exportarJSON()">⬇️ Guardar Datos</button>
+        </div>
+
+        <section class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Participación</div>
+                <div class="metric-value success-text" id="global-votos">0</div>
+                <div class="metric-label" style="margin-top: 4px; font-size: 0.65rem;">Escrutinio Realizado</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Padrón Total</div>
+                <div class="metric-value" id="global-padron">0</div>
+                <div class="metric-label" style="margin-top: 4px; font-size: 0.65rem;">Estimados Registrados</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">% Turnout</div>
+                <div class="metric-value primary-text" id="global-porcentaje">0.0%</div>
+                <div class="progress-container"><div class="progress-bar" id="global-progress"></div></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Mesas Escrutadas</div>
+                <div class="metric-value" id="global-mesas-escrutadas">0 de 0</div>
+                <div class="metric-label" style="margin-top: 4px; font-size: 0.65rem;">Presencia de Actas</div>
+            </div>
+        </section>
+
+        <nav class="tabs-container">
+            <button class="tab-btn active" onclick="window.switchTab('tab-computos')">📊 Cómputos</button>
+            <button class="tab-btn" onclick="window.switchTab('tab-consejos')">👥 Consejos</button>
+            <button class="tab-btn" onclick="window.switchTab('tab-centros')">🏢 Centros</button>
+            <button class="tab-btn" onclick="window.switchTab('tab-mesas')">🗳️ Mesas</button>
+            <button class="tab-btn" onclick="window.switchTab('tab-padron')">👥 Padrón y Consulta</button>
+        </nav>
+
+        <div id="tab-computos" class="tab-content active">
+            <div class="section-header"><h2>Consolidación General de Actas</h2></div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr><th>Código Centro</th><th>Centro de Votación</th><th>Mesas Dispuestas</th><th>Padrón Esperado</th><th>Votos Escrutados</th><th>Estado</th></tr>
+                    </thead>
+                    <tbody id="lista-computos-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-consejos" class="tab-content">
+            <div class="section-header">
+                <div>
+                    <h2>Consejos Comunales</h2>
+                    <p>Organizaciones comunitarias autorizadas.</p>
+                </div>
+                <button class="btn btn-primary" onclick="window.verificarYAbrirModal('consejo')">+ Agregar Consejo</button>
+            </div>
+            <div class="cards-grid" id="grid-consejos"></div>
+        </div>
+
+        <div id="tab-centros" class="tab-content">
+            <div class="section-header">
+                <div>
+                    <h2>Centros de Votación (Recintos)</h2>
+                    <p>Escuelas u oficinas rectoras.</p>
+                </div>
+                <button class="btn btn-primary" onclick="window.verificarYAbrirModal('centro')">+ Agregar Centro</button>
+            </div>
+            <div class="cards-grid" id="grid-centros"></div>
+        </div>
+
+        <div id="tab-mesas" class="tab-content">
+            <div class="section-header">
+                <div>
+                    <h2>Mesas Electorales y Escrutinio</h2>
+                    <p>Mesas que registran ciudadanos y consolidan actas.</p>
+                </div>
+                <button class="btn btn-primary" onclick="window.verificarYAbrirModal('mesa')">+ Registrar Mesa</button>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr><th>Código Mesa</th><th>Centro Asignado</th><th>Padrón</th><th>Votos Registrados</th><th>Estado de Acta</th><th>Escrutinio</th></tr>
+                    </thead>
+                    <tbody id="lista-mesas-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-padron" class="tab-content">
+            <div class="search-box">
+                <label>CONSULTA DE CÉDULAS Y MESA DE SUFRAGIO</label>
+                <div class="search-group">
+                    <input type="text" id="input-buscar-cedula" class="search-input" placeholder="Ingrese número de cédula..." onkeyup="if(event.key === 'Enter') window.buscarElector()">
+                    <button class="btn btn-primary" onclick="window.buscarElector()">Buscar</button>
+                </div>
+                <div id="panel-resultado-busqueda"></div>
+            </div>
+
+            <div class="section-header">
+                <h2>Listado de Votantes Habilitados</h2>
+                <button class="btn btn-primary" onclick="window.verificarYAbrirModal('ciudadano')">+ Agregar Ciudadano</button>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr><th>Nombre</th><th>Cédula</th><th>Mesa asignada</th><th>Estatus</th><th>Acción</th></tr>
+                    </thead>
+                    <tbody id="lista-ciudadanos-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-consejo">
+        <div class="modal-card">
+            <h2 id="title-consejo">Registrar Consejo Comunal</h2>
+            <form id="form-consejo">
+                <input type="hidden" id="edit-id-consejo">
+                <div class="form-group"><label>Código Consejo</label><input type="text" id="c-id" class="form-control" placeholder="Código SITUR" required></div>
+                <div class="form-group"><label>Nombre del Consejo</label><input type="text" id="c-nombre" class="form-control" placeholder="NOMBRE DEL CONSEJO COMUNAL" required></div>
+                <div class="form-group"><label>Sector</label><input type="text" id="c-sector" class="form-control" placeholder="NOMBRE DEL SECTOR" required></div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="window.closeModal('modal-consejo')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Agregar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-centro">
+        <div class="modal-card">
+            <h2 id="title-centro">Registrar Centro Electoral</h2>
+            <form id="form-centro">
+                <input type="hidden" id="edit-id-centro">
+                <div class="form-group"><label>Código Centro</label><input type="text" id="cen-id" class="form-control" placeholder="CÓDIGO DEL CENTRO ELECTORAL" required></div>
+                <div class="form-group"><label>Nombre del Recinto</label><input type="text" id="cen-nombre" class="form-control" placeholder="NOMBRE DEL CENTRO ELECTORAL" required></div>
+                <div class="form-group"><label>COMUNIDAD</label><input type="text" id="cen-ubicacion" class="form-control" placeholder="NOMBRE DE LA COMUNIDAD" required></div>
+                <div class="form-group">
+                    <label>Vincular Consejos Comunales</label>
+                    <div class="checkbox-list-container" id="cen-checkboxes-consejos"></div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="window.closeModal('modal-centro')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Agregar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-mesa">
+        <div class="modal-card">
+            <h2 id="title-mesa">Registrar Mesa Electoral</h2>
+            <form id="form-mesa">
+                <input type="hidden" id="edit-id-mesa">
+                <div class="form-group"><label>Número de Mesa</label><input type="text" id="m-id" class="form-control" placeholder="Ej. Mesa 01" required></div>
+                <div class="form-group"><label>Capacidad Padrón</label><input type="number" id="m-padron" class="form-control" value="1000" required></div>
+                <div class="form-group">
+                    <label>Asociar Centro Electoral</label>
+                    <select id="m-centro" class="form-control" required></select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="window.closeModal('modal-mesa')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Agregar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-ciudadano">
+        <div class="modal-card">
+            <h2>Registrar Ciudadano Habilitado</h2>
+            <form id="form-ciudadano">
+                <div class="form-group"><label>Cédula de Identidad</label><input type="text" id="ci-cedula" class="form-control" placeholder="Ej. 30168991" required></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Nombre</label><input type="text" id="ci}
         .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
     </style>
 </head>
