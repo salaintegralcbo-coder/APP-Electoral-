@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auditoría y Gestión Electoral - Control en la Nube</title>
+    <style>
+        :root {
+            --bg-global: #f8fafc;
+            --surface-card: #ffffff;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --success: #10b981;
+            --danger: #ef4444;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --transition-smooth: all 0.2s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: var(--bg-global); color: var(--text-main); padding: 24px; display: flex; justify-content: center; }
+        
+        .dashboard-container { width: 100%; max-width: 1000px; background: var(--surface-card); border-radius: 24px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); padding: 32px; }
+
+        /* --- HEADER --- */
+        .main-header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius: 20px; padding: 32px; color: #ffffff; margin-bottom: 24px; }
+        .system-badge { display: inline-block; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; padding: 4px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-bottom: 14px; }
+        .main-header h1 { font-size: 1.85rem; font-weight: 800; margin-bottom: 8px; }
+        .main-header p { color: #94a3b8; font-size: 0.95rem; }
+
+        /* --- TOP MENUS & ACTIONS --- */
+        .top-actions-bar { display: flex; gap: 8px; margin-bottom: 24px; background: #f1f5f9; padding: 8px; border-radius: 12px; width: fit-content; }
+        .btn-top-action { padding: 8px 16px; border-radius: 8px; border: none; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: var(--transition-smooth); }
+        .btn-vaciar { background: #ef4444; color: white; }
+        .btn-json { background: #334155; color: white; }
+
+        /* --- METRICAS --- */
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 24px; }
+        .metric-card { background: var(--surface-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; }
+        .metric-label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; margin-top: 4px;}
+        .metric-value { font-size: 1.85rem; font-weight: 800; }
+        .metric-value.success-text { color: var(--success); }
+        .metric-value.primary-text { color: var(--primary); }
+        .progress-container { width: 100%; height: 6px; background-color: #e2e8f0; border-radius: 9999px; margin-top: 12px; overflow: hidden; }
+        .progress-bar { height: 100%; background: var(--primary); width: 0%; transition: width 0.4s ease; }
+
+        /* --- PESTAÑAS --- */
+        .tabs-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; }
+        .tab-btn { padding: 10px 18px; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; border: 1px solid var(--border-color); background: #ffffff; color: var(--text-muted); transition: var(--transition-smooth); }
+        .tab-btn:hover { background: #f1f5f9; color: var(--text-main); }
+        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* --- LAYOUT GRIDS --- */
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .section-header h2 { font-size: 1.25rem; font-weight: 700; }
+        .section-header p { font-size: 0.85rem; color: var(--text-muted); margin-top: 2px; }
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        
+        /* --- TARJETAS --- */
+        .data-card { background: #ffffff; border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; position: relative; transition: var(--transition-smooth); }
+        .data-card:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); }
+        .card-badge { position: absolute; top: 20px; right: 20px; background: #eff6ff; padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; color: var(--primary); }
+        .data-card h3 { font-size: 1.2rem; margin-bottom: 6px; padding-right: 70px; font-weight: 700; }
+        .data-card p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px; }
+        .card-relations { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--border-color); }
+        .relation-tag { display: inline-block; background: #f1f5f9; color: #334155; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; margin: 4px 4px 4px 0; font-weight: 500; }
+
+        /* --- ACCIONES --- */
+        .card-actions { display: flex; gap: 12px; margin-top: 16px; justify-content: flex-end; }
+        .btn-action-edit { background: transparent; color: var(--primary); border: none; font-weight: 600; cursor: pointer; font-size: 0.85rem; }
+        .btn-action-edit:hover { text-decoration: underline; }
+        .btn-action-delete { background: transparent; color: var(--danger); border: none; font-weight: 600; cursor: pointer; font-size: 0.85rem; }
+        .btn-action-delete:hover { text-decoration: underline; }
+
+        /* --- BOTONES --- */
+        .btn { padding: 10px 20px; border-radius: 10px; font-weight: 600; font-size: 0.9rem; cursor: pointer; border: none; display: inline-flex; align-items: center; justify-content: center; transition: var(--transition-smooth); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-secondary { background: #f1f5f9; color: #475569; }
+        .btn-secondary:hover { background: #e2e8f0; }
+
+        /* --- TABLAS --- */
+        .table-wrapper { width: 100%; overflow-x: auto; border: 1px solid var(--border-color); border-radius: 14px; background: #fff; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
+        th { background: #f8fafc; color: var(--text-muted); font-weight: 600; padding: 14px 18px; border-bottom: 2px solid var(--border-color); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
+        td { padding: 16px 18px; border-bottom: 1px solid var(--border-color); }
+        .badge { padding: 4px 10px; border-radius: 9999px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+        .badge-ready { background-color: #d1fae5; color: #065f46; }
+        .badge-pending { background-color: #fef3c7; color: #92400e; }
+
+        /* --- CONSULTA DE CEDULA --- */
+        .search-box { background: linear-gradient(135deg, #0b0f19 0%, #111827 100%); border-radius: 20px; padding: 28px; color: #fff; margin-bottom: 24px; }
+        .search-box label { font-size: 0.8rem; font-weight: 700; color: #94a3b8; letter-spacing: 0.05em; }
+        .search-group { display: flex; gap: 12px; margin-top: 12px; }
+        .search-input { flex: 1; background: #1f2937; border: 1px solid #374151; border-radius: 12px; padding: 14px 18px; color: #fff; font-size: 0.95rem; outline: none; }
+        .elector-card { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 16px; padding: 24px; margin-top: 20px; }
+        .btn-execute-vote { width: 100%; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; font-weight: 700; padding: 14px; border: none; border-radius: 10px; margin-top: 16px; cursor: pointer; }
+        .search-alert { padding: 16px; border-radius: 12px; margin-top: 20px; font-size: 0.95rem; }
+        .search-alert.success { background: rgba(16, 185, 129, 0.1); color: #34d399; }
+        .search-alert.error { background: rgba(239, 68, 68, 0.1); color: #f87171; }
+
+        /* --- MODAL --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.3); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; z-index: 1000; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-card { background: var(--surface-card); border-radius: 20px; width: 100%; max-width: 480px; padding: 32px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1); }
+        .modal-card h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 20px; color: var(--text-main); }
+        .form-group { margin-bottom: 16px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .form-group label { display: block; font-size: 0.75rem; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.02em; }
+        .form-control { width: 100%; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px 14px; font-size: 0.95rem; outline: none; color: var(--text-main); }
+        .form-control:focus { border-color: var(--primary); background: #ffffff; }
+
+        /* --- CHECKBOX LIST --- */
+        .checkbox-list-container { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; max-height: 140px; overflow-y: auto; padding: 12px; }
+        .checkbox-item { display: flex; align-items: center; gap: 10px; padding: 8px 6px; font-size: 0.95rem; border-bottom: 1px solid #f1f5f9; }
+        .checkbox-item:last-child { border-bottom: none; }
+        .checkbox-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <header class="main-header">
+            <span class="system-badge">SISTEMA ELECTORAL EN LA NUBE</span>
+            <h1>Control de Participación Electoral Completo</h1>
+            <p>Sincronización centralizada en tiempo real mediante Firebase.</p>
+        </header>
+
+        <div class="top-actions-bar">
+            <button class="btn-top-action btn-vaciar" onclick="window.vaciarTodoConClave()">🧹 Vaciar Sistema</button>
+            <button class="btn-top-action btn-json" onclick="window.exportarJSON()">⬇️ Guardar JSON</button>
+        </div>
+
+        <section class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Participación</div>
+                <div class="metric-value success-text" id="global-votos">0</div>
+                <div class="metric-label" style="margin-top: 4px; font-size: 0.65rem;">Escrutinio Realizado</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Padrón Total</div>
+                <div class="metric-value" id="global-padron">0</div>
+                <div class="metric-label" style="margin-top: 4px; font-size: 0.65rem;">Estimados Registrados</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">% Turnout</div>
+                <div class="metric-value primary-text" id="global-porcentaje">0.0%</div>
+                <div class="progress-container"><div class="progress-bar" id="global-progress"></div></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Mesas Escrutadas</div>
+                <div class="metric-value" id="global-mesas-escrutadas">0 de 0</div>
+                <div class="metric-label" style="margin-top: 4px; font-size: 0.65rem;">Presencia de Actas</div>
+            </div>
+        </section>
+
+        <nav class="tabs-container">
+            <button class="tab-btn active" onclick="window.switchTab('tab-computos')">📊 Cómputos</button>
+            <button class="tab-btn" onclick="window.switchTab('tab-consejos')">👥 Consejos</button>
+            <button class="tab-btn" onclick="window.switchTab('tab-centros')">🏢 Centros</button>
+            <button class="tab-btn" onclick="window.switchTab('tab-mesas')">🗳️ Mesas</button>
+            <button class="tab-btn" onclick="window.switchTab('tab-padron')">👥 Padrón y Consulta</button>
+        </nav>
+
+        <div id="tab-computos" class="tab-content active">
+            <div class="section-header"><h2>Consolidación General de Actas</h2></div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr><th>Código Centro</th><th>Centro de Votación</th><th>Mesas Dispuestas</th><th>Padrón Esperado</th><th>Votos Escrutados</th><th>Estado</th></tr>
+                    </thead>
+                    <tbody id="lista-computos-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-consejos" class="tab-content">
+            <div class="section-header">
+                <div>
+                    <h2>Consejos Comunales</h2>
+                    <p>Organizaciones comunitarias autorizadas.</p>
+                </div>
+                <button class="btn btn-primary" onclick="window.verificarYAbrirModal('consejo')">+ Agregar Consejo</button>
+            </div>
+            <div class="cards-grid" id="grid-consejos"></div>
+        </div>
+
+        <div id="tab-centros" class="tab-content">
+            <div class="section-header">
+                <div>
+                    <h2>Centros de Votación (Recintos)</h2>
+                    <p>Escuelas u oficinas rectoras.</p>
+                </div>
+                <button class="btn btn-primary" onclick="window.verificarYAbrirModal('centro')">+ Agregar Centro</button>
+            </div>
+            <div class="cards-grid" id="grid-centros"></div>
+        </div>
+
+        <div id="tab-mesas" class="tab-content">
+            <div class="section-header">
+                <div>
+                    <h2>Mesas Electorales y Escrutinio</h2>
+                    <p>Mesas que registran ciudadanos y consolidan actas.</p>
+                </div>
+                <button class="btn btn-primary" onclick="window.verificarYAbrirModal('mesa')">+ Registrar Mesa</button>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr><th>Código Mesa</th><th>Centro Asignado</th><th>Padrón</th><th>Votos Registrados</th><th>Estado de Acta</th><th>Escrutinio</th></tr>
+                    </thead>
+                    <tbody id="lista-mesas-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-padron" class="tab-content">
+            <div class="search-box">
+                <label>CONSULTA DE CÉDULAS Y MESA DE SUFRAGIO</label>
+                <div class="search-group">
+                    <input type="text" id="input-buscar-cedula" class="search-input" placeholder="Ingrese número de cédula..." onkeyup="if(event.key === 'Enter') window.buscarElector()">
+                    <button class="btn btn-primary" onclick="window.buscarElector()">Buscar</button>
+                </div>
+                <div id="panel-resultado-busqueda"></div>
+            </div>
+
+            <div class="section-header">
+                <h2>Listado de Votantes Habilitados</h2>
+                <button class="btn btn-primary" onclick="window.verificarYAbrirModal('ciudadano')">+ Agregar Ciudadano</button>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr><th>Nombre</th><th>Cédula</th><th>Mesa asignada</th><th>Estatus</th><th>Acción</th></tr>
+                    </thead>
+                    <tbody id="lista-ciudadanos-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-consejo">
+        <div class="modal-card">
+            <h2 id="title-consejo">Registrar Consejo Comunal</h2>
+            <form id="form-consejo">
+                <input type="hidden" id="edit-id-consejo">
+                <div class="form-group"><label>Código Consejo</label><input type="text" id="c-id" class="form-control" placeholder="Código SITUR" required></div>
+                <div class="form-group"><label>Nombre del Consejo</label><input type="text" id="c-nombre" class="form-control" placeholder="NOMBRE DEL CONSEJO COMUNAL" required></div>
+                <div class="form-group"><label>Sector</label><input type="text" id="c-sector" class="form-control" placeholder="NOMBRE DEL SECTOR" required></div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="window.closeModal('modal-consejo')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Agregar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-centro">
+        <div class="modal-card">
+            <h2 id="title-centro">Registrar Centro Electoral</h2>
+            <form id="form-centro">
+                <input type="hidden" id="edit-id-centro">
+                <div class="form-group"><label>Código Centro</label><input type="text" id="cen-id" class="form-control" placeholder="CÓDIGO DEL CENTRO ELECTORAL" required></div>
+                <div class="form-group"><label>Nombre del Recinto</label><input type="text" id="cen-nombre" class="form-control" placeholder="NOMBRE DEL CENTRO ELECTORAL" required></div>
+                <div class="form-group"><label>COMUNIDAD</label><input type="text" id="cen-ubicacion" class="form-control" placeholder="NOMBRE DE LA COMUNIDAD" required></div>
+                <div class="form-group">
+                    <label>Vincular Consejos Comunales</label>
+                    <div class="checkbox-list-container" id="cen-checkboxes-consejos"></div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="window.closeModal('modal-centro')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Agregar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-mesa">
+        <div class="modal-card">
+            <h2 id="title-mesa">Registrar Mesa Electoral</h2>
+            <form id="form-mesa">
+                <input type="hidden" id="edit-id-mesa">
+                <div class="form-group"><label>Número de Mesa</label><input type="text" id="m-id" class="form-control" placeholder="Ej. Mesa 01" required></div>
+                <div class="form-group"><label>Capacidad Padrón</label><input type="number" id="m-padron" class="form-control" value="1000" required></div>
+                <div class="form-group">
+                    <label>Asociar Centro Electoral</label>
+                    <select id="m-centro" class="form-control" required></select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="window.closeModal('modal-mesa')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Agregar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-ciudadano">
+        <div class="modal-card">
+            <h2>Registrar Ciudadano Habilitado</h2>
+            <form id="form-ciudadano">
+                <div class="form-group"><label>Cédula de Identidad</label><input type="text" id="ci-cedula" class="form-control" placeholder="Ej. 30168991" required></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Nombre</label><input type="text" id="ci-nombre" class="form-control" placeholder="Ej. Diego" required></div>
+                    <div class="form-group"><label>Apellido</label><input type="text" id="ci-apellido" class="form-control" placeholder="Ej. Suárez" required></div>
+                </div>
+                <div class="form-group">
+                    <label>Asociar Consejo Comunal</label>
+                    <select id="ci-consejo" class="form-control" required><option value="">-- Seleccionar Consejo Comunal --</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Centro Recomendado / Elegido</label>
+                    <select id="ci-centro" class="form-control" required><option value="">-- Elija Centro --</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Mesa Oficial</label>
+                    <select id="ci-mesa" class="form-control" required><option value="">-- Elija Mesa --</option></select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="window.closeModal('modal-ciudadano')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Agregar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Declarados fuera del módulo para garantizar disponibilidad inmediata en los botones del DOM
+        window.switchTab = function(tabId) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            if (window.event) window.event.currentTarget.classList.add('active');
+        };
+        
+        window.closeModal = function(modalId) { 
+            document.getElementById(modalId).classList.remove('active'); 
+        };
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
+
+        // Configuración de tu base de datos Firebase
+        const firebaseConfig = {
+          apiKey: "AIzaSyCAN7HlY0Gt9-cBQgwpro8336cfQSIsdeA",
+          authDomain: "registro-electoral-79cc4.firebaseapp.com",
+          databaseURL: "https://registro-electoral-79cc4-default-rtdb.firebaseio.com",
+          projectId: "registro-electoral-79cc4",
+          storageBucket: "registro-electoral-79cc4.firebasestorage.app",
+          messagingSenderId: "208955490744",
+          appId: "1:208955490744:web:46c25c96e0f2a00403cf4d",
+          measurementId: "G-5EQC4681XW"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const rtdb = getDatabase(app);
+
+        const CLAVE_ACCESO = "4Tetraedro";
+        let db = { consejos: [], centros: [], mesas: [], ciudadanos: [] };
+
+        // Escucha cambios de Firebase en tiempo real
+        onValue(ref(rtdb, 'sistema_electoral'), (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                db.consejos = data.consejos ? Object.values(data.consejos) : [];
+                db.centros = data.centros ? Object.values(data.centros) : [];
+                db.mesas = data.mesas ? Object.values(data.mesas) : [];
+                db.ciudadanos = data.ciudadanos ? Object.values(data.ciudadanos) : [];
+            } else {
+                db = { consejos: [], centros: [], mesas: [], ciudadanos: [] };
+            }
+            renderAll();
+        });
+
+        function solicitarAcceso() {
+            const pass = prompt("🔑 Ingrese la clave de seguridad institucional:");
+            return pass === CLAVE_ACCESO ? true : (alert("❌ Clave incorrecta. Acceso denegado."), false);
+        }
+
+        window.verificarYAbrirModal = function(tipo, editId = null) {
+            if (solicitarAcceso()) openModal(tipo, editId);
+        };
+
+        window.verificarYEliminar = function(nodo, id) {
+            if (solicitarAcceso()) {
+                remove(ref(rtdb, `sistema_electoral/${nodo}/${id}`))
+                .then(() => alert("Registro removido con éxito."))
+                .catch(err => console.error("Error en Firebase:", err));
+            }
+        };
+
+        window.vaciarTodoConClave = function() {
+            if (solicitarAcceso()) {
+                if(confirm("¿Seguro que deseas limpiar TODA la base de datos en Firebase?")) {
+                    set(ref(rtdb, 'sistema_electoral'), null);
+                }
+            }
+        };
+
+        function renderAll() {
+            calcularMetricas();
+            renderConsejos();
+            renderCentros();
+            renderMesas();
+            renderCiudadanos();
+            renderComputos();
+        }
+
+        function calcularMetricas() {
+            const totalVotos = db.ciudadanos.filter(c => c.haVotado).length;
+            const totalPadron = db.mesas.reduce((acc, m) => acc + parseInt(m.padronMax || 0), 0);
+            document.getElementById('global-votos').textContent = totalVotos;
+            document.getElementById('global-padron').textContent = totalPadron;
+            const porcentaje = totalPadron > 0 ? ((totalVotos / totalPadron) * 100).toFixed(1) : "0.0";
+            document.getElementById('global-porcentaje').textContent = `${porcentaje}%`;
+            document.getElementById('global-progress').style.width = `${porcentaje}%`;
+            const mesasConVotos = db.mesas.filter(m => db.ciudadanos.some(c => c.mesaId === m.id && c.haVotado)).length;
+            document.getElementById('global-mesas-escrutadas').textContent = `${mesasConVotos} de ${db.mesas.length}`;
+        }
+
+        function renderConsejos() {
+            const container = document.getElementById('grid-consejos');
+            container.innerHTML = db.consejos.map(c => {
+                const totalVotantes = db.ciudadanos.filter(ci => ci.consejoId === c.id).length;
+                return `
+                    <div class="data-card">
+                        <span class="card-badge">${c.id}</span>
+                        <h3>${c.nombre}</h3>
+                        <p><strong>Sector:</strong> ${c.sector}</p>
+                        <div class="card-relations"><p><strong>${totalVotantes} votantes</strong> inscritos</p></div>
+                        <div class="card-actions">
+                            <button class="btn-action-edit" onclick="window.verificarYAbrirModal('consejo', '${c.id}')">Modificar</button>
+                            <button class="btn-action-delete" onclick="window.verificarYEliminar('consejos', '${c.id}')">Retirar</button>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        function renderCentros() {
+            const container = document.getElementById('grid-centros');
+            container.innerHTML = db.centros.map(c => {
+                const tags = (c.consejosVinculados || []).map(ccId => {
+                    const cc = db.consejos.find(o => o.id === ccId);
+                    return `<span class="relation-tag">${cc ? cc.nombre : ccId}</span>`;
+                }).join('');
+                return `
+                    <div class="data-card">
+                        <span class="card-badge">CÓDIGO: ${c.id}</span>
+                        <h3>${c.nombre}</h3>
+                        <p><strong>UBICACIÓN:</strong> ${c.ubicacion}</p>
+                        <div class="card-relations">
+                            <p style="font-weight:700;margin-bottom:6px;font-size:0.75rem;color:var(--text-muted);;">CONSEJOS VINCULADOS:</p>
+                            ${tags || '<span style="color:var(--text-muted);font-size:0.8rem;">Ninguno</span>'}
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn-action-edit" onclick="window.verificarYAbrirModal('centro', '${c.id}')">Modificar</button>
+                            <button class="btn-action-delete" onclick="window.verificarYEliminar('centros', '${c.id}')">Eliminar</button>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        function renderMesas() {
+            const tbody = document.getElementById('lista-mesas-body');
+            tbody.innerHTML = db.mesas.map(m => {
+                const centro = db.centros.find(c => c.id === m.centroId);
+                const votosMesa = db.ciudadanos.filter(c => c.mesaId === m.id && c.haVotado).length;
+                return `
+                    <tr>
+                        <td><strong>${m.id}</strong></td>
+                        <td>${centro ? centro.nombre : 'Sin Recinto'}</td>
+                        <td>${m.padronMax}</td>
+                        <td>${votosMesa}</td>
+                        <td>${votosMesa > 0 ? '<span class="badge badge-ready">ESCRUTADA</span>' : '<span class="badge badge-pending">PENDIENTE</span>'}</td>
+                        <td>
+                            <button class="btn-action-edit" onclick="window.verificarYAbrirModal('mesa', '${m.id}')">Modificar</button>
+                            <button class="btn-action-delete" style="margin-left:8px;" onclick="window.verificarYEliminar('mesas', '${m.id}')">✖</button>
+                        </td>
+                    </tr>`;
+            }).join('');
+        }
+
+        function renderCiudadanos() {
+            const tbody = document.getElementById('lista-ciudadanos-body');
+            const pendientes = db.ciudadanos.filter(c => !c.haVotado);
+            if(pendientes.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px;">Sin electores pendientes.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = pendientes.map(c => `
+                <tr>
+                    <td><strong>${c.nombre} ${c.apellido}</strong></td>
+                    <td>${c.cedula}</td>
+                    <td>${c.mesaId}</td>
+                    <td><span class="badge badge-pending">PENDIENTE</span></td>
+                    <td><button class="btn-action-delete" onclick="window.verificarYEliminar('ciudadanos', '${c.cedula}')">Eliminar</button></td>
+                </tr>`).join('');
+        }
+
+        function renderComputos() {
+            document.getElementById('lista-computos-body').innerHTML = db.centros.map(c => {
+                const mesasCentro = db.mesas.filter(m => m.centroId === c.id);
+                const padronEsperado = mesasCentro.reduce((acc, m) => acc + parseInt(m.padronMax || 0), 0);
+                const votosCentro = db.ciudadanos.filter(ci => ci.centroId === c.id && ci.haVotado).length;
+                return `
+                    <tr>
+                        <td><code>${c.id}</code></td>
+                        <td><strong>${c.nombre}</strong></td>
+                        <td>${mesasCentro.length} de ${mesasCentro.length}</td>
+                        <td>${padronEsperado}</td>
+                        <td><span class="badge badge-ready" style="background:#e0f2fe;color:#0369a1">${votosCentro} Votos</span></td>
+                        <td><span class="badge badge-ready">CONSOLIDADA</span></td>
+                    </tr>`;
+            }).join('');
+        }
+
+        function openModal(tipo, editId = null) {
+            document.getElementById(`modal-${tipo}`).classList.add('active');
+            if (tipo === 'consejo') {
+                document.getElementById('title-consejo').textContent = editId ? "Modificar Consejo Comunal" : "Registrar Consejo Comunal";
+                if (editId) {
+                    const item = db.consejos.find(c => c.id === editId);
+                    document.getElementById('edit-id-consejo').value = item.id;
+                    document.getElementById('c-id').value = item.id; document.getElementById('c-id').disabled = true;
+                    document.getElementById('c-nombre').value = item.nombre;
+                    document.getElementById('c-sector').value = item.sector;
+                } else {
+                    document.getElementById('edit-id-consejo').value = '';
+                    document.getElementById('c-id').disabled = false;
+                    document.getElementById('form-consejo').reset();
+                }
+            } else if (tipo === 'centro') {
+                document.getElementById('title-centro').textContent = editId ? "Modificar Centro" : "Registrar Centro";
+                const checkboxContainer = document.getElementById('cen-checkboxes-consejos');
+                checkboxContainer.innerHTML = '';
+                let selectedCC = [];
+                if (editId) {
+                    const item = db.centros.find(c => c.id === editId);
+                    document.getElementById('edit-id-centro').value = item.id;
+                    document.getElementById('cen-id').value = item.id; document.getElementById('cen-id').disabled = true;
+                    document.getElementById('cen-nombre').value = item.nombre;
+                    document.getElementById('cen-ubicacion').value = item.ubicacion;
+                    selectedCC = item.consejosVinculados || [];
+                } else {
+                    document.getElementById('edit-id-centro').value = '';
+                    document.getElementById('cen-id').disabled = false;
+                    document.getElementById('form-centro').reset();
+                }
+                if (db.consejos.length === 0) {
+                    checkboxContainer.innerHTML = '<span>No hay consejos registrados.</span>';
+                } else {
+                    db.consejos.forEach(cc => {
+                        const isChecked = selectedCC.includes(cc.id) ? 'checked' : '';
+                        checkboxContainer.innerHTML += `
+                            <div class="checkbox-item">
+                                <input type="checkbox" name="cen-consejos-check" value="${cc.id}" ${isChecked}>
+                                <label>${cc.nombre}</label>
+                            </div>`;
+                    });
+                }
+            } else if (tipo === 'mesa') {
+                document.getElementById('title-mesa').textContent = editId ? "Modificar Mesa" : "Registrar Mesa";
+                document.getElementById('m-centro').innerHTML = db.centros.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+                if (editId) {
+                    const item = db.mesas.find(m => m.id === editId);
+                    document.getElementById('edit-id-mesa').value = item.id;
+                    document.getElementById('m-id').value = item.id; document.getElementById('m-id').disabled = true;
+                    document.getElementById('m-padron').value = item.padronMax;
+                    document.getElementById('m-centro').value = item.centroId;
+                } else {
+                    document.getElementById('edit-id-mesa').value = '';
+                    document.getElementById('m-id').disabled = false;
+                    document.getElementById('form-mesa').reset();
+                }
+            } else if (tipo === 'ciudadano') {
+                document.getElementById('form-ciudadano').reset();
+                document.getElementById('ci-consejo').innerHTML = '<option value="">-- Seleccionar Consejo Comunal --</option>' + db.consejos.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+                document.getElementById('ci-centro').innerHTML = '<option value="">-- Elija Centro --</option>' + db.centros.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+                document.getElementById('ci-mesa').innerHTML = '<option value="">-- Elija Mesa --</option>';
+            }
+        }
+
+        // Lógica de cambio dinámico de opciones en formulario de ciudadano
+        document.getElementById('ci-centro').addEventListener('change', (e) => {
+            const centroId = e.target.value;
+            const mesasFiltradas = db.mesas.filter(m => m.centroId === centroId);
+            document.getElementById('ci-mesa').innerHTML = '<option value="">-- Elija Mesa --</option>' + mesasFiltradas.map(m => `<option value="${m.id}">${m.id}</option>`).join('');
+        });
+
+        // Envíos de Formularios a Firebase
+        document.getElementById('form-consejo').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const editId = document.getElementById('edit-id-consejo').value;
+            const id = document.getElementById('c-id').value.trim();
+            const data = { id: editId || id, nombre: document.getElementById('c-nombre').value.trim(), sector: document.getElementById('c-sector').value.trim() };
+            set(ref(rtdb, `sistema_electoral/consejos/${data.id}`), data).then(() => { closeModal('modal-consejo'); });
+        });
+
+        document.getElementById('form-centro').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const editId = document.getElementById('edit-id-centro').value;
+            const id = document.getElementById('cen-id').value.trim();
+            const checkboxes = document.querySelectorAll('input[name="cen-consejos-check"]:checked');
+            const data = {
+                id: editId || id,
+                nombre: document.getElementById('cen-nombre').value.trim(),
+                ubicacion: document.getElementById('cen-ubicacion').value.trim(),
+                consejosVinculados: Array.from(checkboxes).map(cb => cb.value)
+            };
+            set(ref(rtdb, `sistema_electoral/centros/${data.id}`), data).then(() => { closeModal('modal-centro'); });
+        });
+
+        document.getElementById('form-mesa').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const editId = document.getElementById('edit-id-mesa').value;
+            const id = document.getElementById('m-id').value.trim();
+            const data = { id: editId || id, padronMax: parseInt(document.getElementById('m-padron').value), centroId: document.getElementById('m-centro').value };
+            set(ref(rtdb, `sistema_electoral/mesas/${data.id}`), data).then(() => { closeModal('modal-mesa'); });
+        });
+
+        document.getElementById('form-ciudadano').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const cedula = document.getElementById('ci-cedula').value.trim();
+            if(db.ciudadanos.some(c => c.cedula === cedula)) return alert('Esta cédula ya se encuentra registrada.');
+            const data = {
+                cedula,
+                nombre: document.getElementById('ci-nombre').value.trim(),
+                apellido: document.getElementById('ci-apellido').value.trim(),
+                consejoId: document.getElementById('ci-consejo').value,
+                centroId: document.getElementById('ci-centro').value,
+                mesaId: document.getElementById('ci-mesa').value,
+                haVotado: false
+            };
+            set(ref(rtdb, `sistema_electoral/ciudadanos/${cedula}`), data).then(() => { closeModal('modal-ciudadano'); });
+        });
+
+        // Consulta del Elector y Cambio de Estatus (Voto)
+        window.buscarElector = function() {
+            const query = document.getElementById('input-buscar-cedula').value.trim();
+            const panel = document.getElementById('panel-resultado-busqueda');
+            if(!query) return;
+
+            const elector = db.ciudadanos.find(c => c.cedula === query);
+            if(!elector) {
+                panel.innerHTML = `<div class="search-alert error">✖ Cédula no localizada en el sistema de nubes.</div>`;
+                return;
+            }
+            if(elector.haVotado) {
+                panel.innerHTML = `<div class="search-alert success"><strong>🔒 COMPUTA: VOTO REGISTRADO</strong></div>`;
+                return;
+            }
+            const centro = db.centros.find(cen => cen.id === elector.centroId);
+            panel.innerHTML = `
+                <div class="elector-card">
+                    <span class="badge badge-ready">LISTO PARA VOTAR</span>
+                    <h3 style="margin-top:8px;">${elector.nombre} ${elector.apellido}</h3>
+                    <p><strong>Cédula:</strong> ${elector.cedula}</p>
+                    <p><strong>Centro:</strong> ${centro ? centro.nombre : 'No asignado'}</p>
+                    <p><strong>Mesa:</strong> ${elector.mesaId}</p>
+                    <button class="btn-execute-vote" id="btn-votar-cloud">Cambiar Estatus Elector (Votar)</button>
+                </div>`;
+
+            document.getElementById('btn-votar-cloud').addEventListener('click', () => {
+                elector.haVotado = true;
+                set(ref(rtdb, `sistema_electoral/ciudadanos/${elector.cedula}`), elector).then(() => {
+                    document.getElementById('input-buscar-cedula').value = '';
+                    panel.innerHTML = `<div class="search-alert success">🎉 ¡Estatus sincronizado con éxito!</div>`;
+                });
+            });
+        };
+
+        window.exportarJSON = function() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "registro_electoral_cloud.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        };
+    </script>
+</body>
+</html>
